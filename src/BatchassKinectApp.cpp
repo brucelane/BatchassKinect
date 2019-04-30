@@ -30,6 +30,7 @@ private:
 	float						mFrameRate;
 	bool						mFullScreen;
 	ci::params::InterfaceGlRef	mParams;
+	int							mSend;
 	SpoutOut					mSpoutOut;
 };
 
@@ -39,32 +40,6 @@ BatchassKinectApp::BatchassKinectApp()
 	: mSpoutOut("Kinec", app::getWindowSize())
 {
 }
-void BatchassKinectApp::draw()
-{
-	gl::viewport(getWindowSize());
-	gl::clear();
-	gl::setMatricesWindow(getWindowSize());
-	gl::enableAlphaBlending();
-
-	if (mSurfaceColor) {
-		gl::TextureRef tex = gl::Texture::create(*mSurfaceColor);
-		gl::draw(tex, tex->getBounds(), Rectf(vec2(0.0f), getWindowCenter()));
-	}
-	if (mChannelDepth) {
-		gl::TextureRef tex = gl::Texture::create(*Kinect2::channel16To8(mChannelDepth));
-		gl::draw(tex, tex->getBounds(), Rectf(getWindowCenter().x, 0.0f, (float)getWindowWidth(), getWindowCenter().y));
-	}
-	if (mChannelInfrared) {
-		gl::TextureRef tex = gl::Texture::create(*mChannelInfrared);
-		gl::draw(tex, tex->getBounds(), Rectf(0.0f, getWindowCenter().y, getWindowCenter().x, (float)getWindowHeight()));
-	}
-	if (mChannelBodyIndex) {
-		gl::TextureRef tex = gl::Texture::create(*Kinect2::colorizeBodyIndex(mChannelBodyIndex));
-		gl::draw(tex, tex->getBounds(), Rectf(getWindowCenter(), vec2(getWindowSize())));
-	}
-	mSpoutOut.sendViewport();
-	mParams->draw();
-}
 
 void BatchassKinectApp::setup()
 {
@@ -72,7 +47,7 @@ void BatchassKinectApp::setup()
 
 	mFrameRate = 0.0f;
 	mFullScreen = false;
-
+	mSend = 1;
 	mDevice = Kinect2::Device::create();
 	mDevice->start();
 	mDevice->connectBodyIndexEventHandler([&](const Kinect2::BodyIndexFrame& frame)
@@ -93,9 +68,67 @@ void BatchassKinectApp::setup()
 	});
 
 	mParams = params::InterfaceGl::create("Params", ivec2(200, 100));
+	mParams->addParam("spOut", &mSend).key("o");
 	mParams->addParam("Frame rate", &mFrameRate, "", true);
 	mParams->addParam("Full screen", &mFullScreen).key("f");
 	mParams->addButton("Quit", [&]() { quit(); }, "key=q");
+}
+void BatchassKinectApp::draw()
+{
+	gl::viewport(getWindowSize());
+	gl::clear();
+	gl::setMatricesWindow(getWindowSize());
+	gl::enableAlphaBlending();
+	switch (mSend)
+	{
+	case 0:
+	if (mSurfaceColor) {
+		gl::TextureRef tex = gl::Texture::create(*mSurfaceColor);
+		gl::draw(tex, tex->getBounds(), getWindowBounds());
+	}
+		break;
+	case 2:
+	if (mChannelInfrared) {
+		gl::TextureRef tex = gl::Texture::create(*mChannelInfrared);
+		gl::draw(tex, tex->getBounds(), getWindowBounds());
+	}
+		break;
+	case 3:
+	if (mChannelBodyIndex) {
+		gl::TextureRef tex = gl::Texture::create(*Kinect2::colorizeBodyIndex(mChannelBodyIndex));
+		gl::draw(tex, tex->getBounds(), getWindowBounds());
+	}
+		break;
+	default:
+		// 1 or others
+	if (mChannelDepth) {
+		gl::TextureRef tex = gl::Texture::create(*Kinect2::channel16To8(mChannelDepth));
+		gl::draw(tex, tex->getBounds(), getWindowBounds());
+	}		
+	break;
+	}
+	mSpoutOut.sendViewport();	
+
+	if (mSurfaceColor) {
+		gl::TextureRef tex = gl::Texture::create(*mSurfaceColor);
+		//gl::draw(tex, tex->getBounds(), Rectf(vec2(0.0f), getWindowCenter()));
+		gl::draw(tex, tex->getBounds(), Rectf(0.0f, 0.0f, 200.0f, 100.0f));
+	}
+	if (mChannelDepth) {
+		gl::TextureRef tex = gl::Texture::create(*Kinect2::channel16To8(mChannelDepth));
+		gl::draw(tex, tex->getBounds(), Rectf(200.0f, 0.0f, 400.0f, 100.0f));
+	}
+	if (mChannelInfrared) {
+		gl::TextureRef tex = gl::Texture::create(*mChannelInfrared);
+		gl::draw(tex, tex->getBounds(), Rectf(400.0f, 0.0f, 600.0f, 100.0f));
+	}
+	if (mChannelBodyIndex) {
+		gl::TextureRef tex = gl::Texture::create(*Kinect2::colorizeBodyIndex(mChannelBodyIndex));
+		gl::draw(tex, tex->getBounds(), Rectf(600.0f, 0.0f, 800.0f, 100.0f));
+	}
+	
+
+	mParams->draw();
 }
 
 void BatchassKinectApp::update()
