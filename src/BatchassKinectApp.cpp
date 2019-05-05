@@ -47,7 +47,7 @@ void BatchassKinectApp::setup()
 
 	mFrameRate = 0.0f;
 	mFullScreen = false;
-	mSend = 1;
+	mSend = 2;
 	mDevice = Kinect2::Device::create();
 	mDevice->start();
 	mDevice->connectBodyIndexEventHandler([&](const Kinect2::BodyIndexFrame& frame)
@@ -143,7 +143,7 @@ void BatchassKinectApp::update()
 
 CINDER_APP(BatchassKinectApp, RendererGl, [](App::Settings* settings)
 {
-	settings->prepareWindow(Window::Format().size(800, 600).title("Basic App"));
+	settings->prepareWindow(Window::Format().size(800, 600).title("Kinect Basic"));
 	settings->setFrameRate(60.0f);
 })
 
